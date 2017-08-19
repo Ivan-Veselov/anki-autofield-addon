@@ -8,34 +8,35 @@ from aqt import mw
 from aqt.editor import Editor
 from anki.hooks import wrap
 
-gSourceFieldName = "Example [source]"
-gOpenedFieldName = "Example [opened]"
-gClozeFieldName = "Example [cloze]"
+gSourceFieldSuffix = "[source]"
+gOpenedFieldSuffix = "[opened]"
+gClozeFieldSuffix = "[cloze]"
 
 gSyntaxPattetn = r'\[\[(.*?)\]\]'
 
 gShortcutKey = "F12"
 
-def updateDstField(aNote, aFieldName, aReplacement):
+def updateDstField(aNote, aSourceFieldValue, aFieldName, aReplacement):
     if not aFieldName in mw.col.models.fieldNames(aNote.model()):
         return False
     
     newValue = re.sub(gSyntaxPattetn,
-                      r'<font color="#0000ff"><b>' + aReplacement + r'</b></font>', #tune
-                      aNote[gSourceFieldName])
+                      r'<font color="#0000ff"><b>' + aReplacement + r'</b></font>',
+                      aSourceFieldValue)
 
     result = aNote[aFieldName] != newValue
     aNote[aFieldName] = newValue
     return result
 
 def onEditorFocusLost(aFlag, aNote, aFieldIndex):
-    fieldNames = mw.col.models.fieldNames(aNote.model())
-    
-    if fieldNames[aFieldIndex] != gSourceFieldName:
+    fieldName = mw.col.models.fieldNames(aNote.model())[aFieldIndex]
+
+    if not fieldName.endswith(gSourceFieldSuffix):
         return aFlag
 
-    aFlag |= updateDstField(aNote, gOpenedFieldName, r'\1')
-    aFlag |= updateDstField(aNote, gClozeFieldName, r'[...]')
+    fieldPrefix = fieldName[:-len(gSourceFieldSuffix)]
+    aFlag |= updateDstField(aNote, aNote[fieldName], fieldPrefix + gOpenedFieldSuffix, r'\1')
+    aFlag |= updateDstField(aNote, aNote[fieldName], fieldPrefix + gClozeFieldSuffix, r'[...]')
 
     return aFlag
 
